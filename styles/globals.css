@@ -47,6 +47,8 @@ body {
   color: var(--ink);
   font-family: "Avenir Next", "Nunito Sans", "Segoe UI", sans-serif;
   background: var(--app-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
 }
 
 .topbar {
@@ -235,6 +237,7 @@ body {
   margin: 0;
   font-size: 1.98rem;
   line-height: 1.03;
+  font-weight: 800;
 }
 
 .screen-copy {
@@ -349,6 +352,7 @@ body {
 h3 {
   margin: 0.3rem 0 0;
   font-size: 1.15rem;
+  font-weight: 750;
 }
 
 .muted {
@@ -474,6 +478,7 @@ h3 {
 .task-item strong {
   font-size: 0.88rem;
   line-height: 1.2;
+  font-weight: 700;
 }
 
 .task-item.done {
@@ -534,7 +539,7 @@ h3 {
   color: var(--ink-soft);
   text-align: center;
   font-size: 0.9rem;
-  font-weight: 700;
+  font-weight: 650;
   border-radius: 12px;
   padding: 0.52rem 0.2rem;
   transition: background 140ms ease, color 140ms ease, transform 120ms ease;
@@ -586,7 +591,9 @@ select {
   padding: 0.72rem 0.9rem;
   background: var(--accent);
   color: #fff;
-  font-weight: 800;
+  font-weight: 700;
+  line-height: 1.25;
+  text-decoration: none;
   cursor: pointer;
   transition: transform 120ms ease, box-shadow 120ms ease, opacity 120ms ease;
 }
@@ -607,6 +614,7 @@ select {
   background: var(--chip-bg);
   color: var(--ink);
   border-color: var(--chip-border);
+  text-decoration: none;
 }
 
 .button:hover {
@@ -952,7 +960,7 @@ select {
   background: var(--panel);
   border-radius: 10px;
   padding: 0.62rem 0.7rem;
-  font-weight: 700;
+  font-weight: 650;
   font-size: 0.95rem;
 }
 
@@ -1172,6 +1180,10 @@ select {
   .button {
     font-size: 1rem;
     padding: 0.82rem 0.95rem;
+  }
+
+  .task-item strong {
+    font-size: 0.95rem;
   }
 }
 
