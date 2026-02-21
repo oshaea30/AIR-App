@@ -688,17 +688,22 @@ select {
 .opps-pills {
   margin-top: 0.7rem;
   display: flex;
+  flex-wrap: wrap;
   gap: 0.48rem;
 }
 
 .opps-pill {
   border: 0;
   border-radius: 999px;
-  padding: 0.5rem 0.8rem;
+  padding: 0.46rem 0.84rem;
+  min-height: 40px;
   background: rgba(255, 255, 255, 0.16);
   color: #edf3ff;
-  font-weight: 700;
-  font-size: 0.84rem;
+  font-weight: 650;
+  font-size: 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  white-space: nowrap;
 }
 
 .opps-pill.active {

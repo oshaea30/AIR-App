@@ -223,9 +223,8 @@ export default function OpportunitiesPage() {
         <h2>Find your next assignment</h2>
         <p className="screen-copy">Ranked opportunities tuned to your profile and goals.</p>
         <div className="opps-pills">
-          <span className="opps-pill active">Matches</span>
-          <span className="opps-pill muted">Calendar soon</span>
-          <span className="opps-pill muted">+ New soon</span>
+          <span className="opps-pill active">Best matches</span>
+          <span className="opps-pill muted">Updated daily</span>
         </div>
       </article>
 
