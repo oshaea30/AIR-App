@@ -305,7 +305,7 @@ body {
 }
 
 .stat-card.stat-highlight {
-  background: linear-gradient(150deg, #f3f8ff, #fff);
+  background: linear-gradient(150deg, var(--panel-soft), var(--panel));
 }
 
 .stat-label {
@@ -941,6 +941,70 @@ select {
 [data-theme="dark"] .rates-hero,
 [data-theme="dark"] .advocacy-hero {
   background: linear-gradient(152deg, #2f2520, #171f2f);
+}
+
+[data-theme="dark"] .type-pill {
+  border-color: #35527a;
+  background: #1b2b43;
+  color: #bed4f6;
+}
+
+[data-theme="dark"] .type-pill.grant {
+  border-color: #6a5337;
+  background: #3a2d20;
+  color: #f4d7b2;
+}
+
+[data-theme="dark"] .type-pill.fellowship {
+  border-color: #45657d;
+  background: #203447;
+  color: #c5e6f5;
+}
+
+[data-theme="dark"] .type-pill.pitch-call {
+  border-color: #6f463f;
+  background: #3c2623;
+  color: #f4c8bf;
+}
+
+[data-theme="dark"] .stage-to-pitch,
+[data-theme="dark"] .stage-applied {
+  background: #263a53;
+  color: #c7d9f4;
+}
+
+[data-theme="dark"] .stage-interview {
+  background: #1f3f51;
+  color: #c6e8f5;
+}
+
+[data-theme="dark"] .stage-booked,
+[data-theme="dark"] .stage-invoiced {
+  background: #44331f;
+  color: #f4d6ad;
+}
+
+[data-theme="dark"] .stage-paid {
+  background: #1e3d32;
+  color: #c7efdc;
+}
+
+[data-theme="dark"] .fit-chip {
+  background: #21384f;
+  border-color: #385877;
+  color: #c6ddf7;
+}
+
+[data-theme="dark"] .urgency-chip {
+  background: #24344a;
+  border-color: #39516f;
+  color: #bdd2ee;
+}
+
+[data-theme="dark"] .urgency-chip.urgent {
+  background: #4a2a23;
+  border-color: #6c3e34;
+  color: #ffd0c8;
 }
 
 .pipeline-screen .card,
