@@ -96,6 +96,21 @@ body {
   position: relative;
 }
 
+.guest-frame {
+  padding-bottom: 1rem;
+}
+
+.guest-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+  border: 1px solid var(--line);
+  background: #fff;
+  border-radius: 16px;
+  padding: 0.42rem;
+}
+
 .brand-ribbon {
   display: grid;
   grid-template-columns: 1fr auto;
@@ -175,6 +190,10 @@ body {
 .hero-card .eyebrow,
 .hero-card .screen-copy {
   color: #d9e6ff;
+}
+
+.landing-hero .button-row {
+  margin-top: 0.9rem;
 }
 
 .meter-row {
@@ -885,6 +904,7 @@ select {
 
   .tabs {
     max-width: 1120px;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
   }
 
   .tab-link {

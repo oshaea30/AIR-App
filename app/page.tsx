@@ -274,6 +274,36 @@ export default function HomePage() {
 
   return (
     <section className="screen dashboard-screen">
+      {!loading && !session ? (
+        <>
+          <article className="hero-card landing-hero">
+            <p className="eyebrow">Member Platform</p>
+            <h2>Build a stronger freelance career</h2>
+            <p className="screen-copy">
+              Track paid work, use clear contract language, and access AIR advocacy tools in one place.
+            </p>
+            <div className="button-row">
+              <Link className="button" href="/auth">
+                Sign in
+              </Link>
+              <Link className="button button-secondary" href="/auth">
+                Create account or use demo
+              </Link>
+            </div>
+          </article>
+
+          <article className="card">
+            <p className="eyebrow">What Members Get</p>
+            <ul className="simple-list">
+              <li>Opportunity matching and work tracker</li>
+              <li>Rate guidance plus contract-ready templates</li>
+              <li>Advocacy issue logging and fair-practice habits</li>
+            </ul>
+          </article>
+        </>
+      ) : null}
+      {!loading && !session ? null : (
+        <>
       {loading ? <p className="status-banner info">Loading dashboard data...</p> : null}
       {!loading && error ? <p className="status-banner error">{error}</p> : null}
       <article className="hero-card">
@@ -376,6 +406,8 @@ export default function HomePage() {
           ))}
         </ul>
       </article>
+        </>
+      )}
     </section>
   );
 }

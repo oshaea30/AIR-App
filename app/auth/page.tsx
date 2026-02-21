@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { hasSupabaseConfig } from "@/lib/env";
 import { clearDemoSession, getSessionUser, isDemoAuthEnabled, setDemoSession, type SessionUser } from "@/lib/member-session";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
@@ -12,6 +13,9 @@ export default function AuthPage() {
   const [status, setStatus] = useState("Sign in to sync your saved work data.");
   const [loading, setLoading] = useState(true);
   const demoEnabled = isDemoAuthEnabled();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const nextPath = searchParams.get("next") || "/";
 
   useEffect(() => {
     void getSessionUser().then((user) => {
@@ -42,6 +46,7 @@ export default function AuthPage() {
       mode: "supabase"
     });
     setStatus("Signed in successfully.");
+    router.push(nextPath);
   }
 
   async function signUp() {
@@ -83,6 +88,7 @@ export default function AuthPage() {
     }
     setSession(demoUser);
     setStatus("Demo session active. Data saves to this browser.");
+    router.push(nextPath);
   }
 
   return (
@@ -91,8 +97,8 @@ export default function AuthPage() {
       {!loading && session ? <p className="status-banner success">Session active.</p> : null}
       <article className="auth-hero">
         <p className="eyebrow">Access</p>
-        <h2>Member authentication</h2>
-        <p className="screen-copy">Use your AIR account to sync your work tracker, saved opportunities, and profile settings.</p>
+        <h2>Sign in to AIR Career OS</h2>
+        <p className="screen-copy">Use your member account to access opportunities, toolkit templates, and advocacy features.</p>
         <p className="muted">{status}</p>
       </article>
 
@@ -107,7 +113,7 @@ export default function AuthPage() {
       {hasSupabaseConfig() ? (
         <article className="card">
           <p className="eyebrow">Secure Access</p>
-          <h3>Email + Password</h3>
+          <h3>Email and password</h3>
           <div className="form-grid">
             <input type="email" placeholder="Email address" value={email} onChange={(e) => setEmail(e.target.value)} />
             <input
@@ -134,7 +140,7 @@ export default function AuthPage() {
       {demoEnabled ? (
         <article className="card">
           <p className="eyebrow">Test Access</p>
-          <h3>Demo Sign-In</h3>
+          <h3>Demo sign-in</h3>
           <p className="muted">Use this for your small tester group. Demo data is saved in this browser only.</p>
           <div className="button-row">
             <button className="button" onClick={signInDemo}>
