@@ -37,6 +37,8 @@ Then open the `Auth` tab and click `Enter Demo`. In demo mode, saved jobs, work 
 - Work Tracker to move opportunities from pitch to paid.
 - Work Tracker sync backed by Supabase when signed in.
 - Fair-Rate Assistant with quote range guidance.
+- Toolkit tab with contract clauses and negotiation scripts.
+- Advocacy tab for fair-practice issue logging and weekly checklist tracking.
 - Saved opportunities and one-click "Add to Work Tracker" actions.
 - Member profile preferences (skills/beats/location/pay floor) for personalized ranking.
 - Coaching check-in scheduler and daily reminders on the dashboard.

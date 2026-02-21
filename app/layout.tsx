@@ -7,7 +7,7 @@ import "@/styles/globals.css";
 
 export const metadata: Metadata = {
   title: "AIR Career OS",
-  description: "Opportunity matching, work tracking, and fair-rate support for independent media makers."
+  description: "Opportunity matching, contract templates, advocacy tracking, and fair-rate support for independent media makers."
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
@@ -22,6 +22,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             <nav className="primary-nav">
               <Link href="/">Dashboard</Link>
               <Link href="/opportunities">Opportunities</Link>
+              <Link href="/toolkit">Toolkit</Link>
+              <Link href="/advocacy">Advocacy</Link>
               <Link href="/pipeline">Work Tracker</Link>
               <Link href="/profile">Profile</Link>
             </nav>

@@ -491,6 +491,9 @@ select {
 }
 
 .button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
   margin-top: 0.72rem;
   border: 1px solid var(--accent);
@@ -759,14 +762,18 @@ select {
 .pipeline-screen,
 .profile-screen,
 .auth-screen,
-.rates-screen {
+.rates-screen,
+.toolkit-screen,
+.advocacy-screen {
   gap: 0.84rem;
 }
 
 .pipeline-hero,
 .profile-hero,
 .auth-hero,
-.rates-hero {
+.rates-hero,
+.toolkit-hero,
+.advocacy-hero {
   border-radius: 20px;
   padding: 0.96rem;
   border: 1px solid #dce6f3;
@@ -801,10 +808,27 @@ select {
   border-color: #f2ddd0;
 }
 
+.toolkit-hero {
+  background: linear-gradient(152deg, #ffffff, #f2f8ff);
+}
+
+.advocacy-hero {
+  background: linear-gradient(152deg, #fffaf4, #ffffff);
+  border-color: #f0ddcb;
+}
+
+.resource-item {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 0.68rem;
+}
+
 .pipeline-screen .card,
 .profile-screen .card,
 .auth-screen .card,
-.rates-screen .card {
+.rates-screen .card,
+.toolkit-screen .card,
+.advocacy-screen .card {
   border-radius: 18px;
 }
 
@@ -876,7 +900,9 @@ select {
   .pipeline-screen,
   .profile-screen,
   .auth-screen,
-  .rates-screen {
+  .rates-screen,
+  .toolkit-screen,
+  .advocacy-screen {
     max-width: 760px;
     margin: 0 auto;
   }

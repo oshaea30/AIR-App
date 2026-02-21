@@ -16,7 +16,9 @@ export default function AuthPage() {
   useEffect(() => {
     void getSessionUser().then((user) => {
       setSession(user);
-      if (!hasSupabaseConfig() && !demoEnabled) {
+      if (!hasSupabaseConfig() && demoEnabled) {
+        setStatus("Demo mode is ready. Tap Enter Demo to continue.");
+      } else if (!hasSupabaseConfig() && !demoEnabled) {
         setStatus("Add Supabase env vars to enable authentication.");
       }
       setLoading(false);

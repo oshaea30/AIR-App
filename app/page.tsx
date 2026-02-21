@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { StatCard } from "@/components/stat-card";
 import { readDemoCheckins, readDemoPipelineItems, readDemoSavedIds } from "@/lib/demo-store";
@@ -326,6 +327,25 @@ export default function HomePage() {
         <button className="button button-secondary" onClick={enableNotifications}>
           Enable Browser Reminders
         </button>
+      </article>
+
+      <article className="card">
+        <p className="eyebrow">Member Essentials</p>
+        <h3>Daily AIR tools</h3>
+        <div className="button-row">
+          <Link className="button button-secondary" href="/toolkit">
+            Open contract and rate toolkit
+          </Link>
+          <Link className="button button-secondary" href="/advocacy">
+            Open fair-practice tracker
+          </Link>
+          <Link className="button button-secondary" href="/pipeline">
+            Open work tracker
+          </Link>
+          <Link className="button button-secondary" href="/rates">
+            Open full rate assistant
+          </Link>
+        </div>
       </article>
 
       <article className="card">

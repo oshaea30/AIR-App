@@ -6,9 +6,9 @@ import { usePathname } from "next/navigation";
 const tabs = [
   { href: "/", label: "Dashboard" },
   { href: "/opportunities", label: "Opportunities" },
-  { href: "/pipeline", label: "Work Tracker" },
+  { href: "/toolkit", label: "Toolkit" },
+  { href: "/advocacy", label: "Advocacy" },
   { href: "/profile", label: "Profile" },
-  { href: "/auth", label: "Auth" }
 ];
 
 export function NavTabs() {

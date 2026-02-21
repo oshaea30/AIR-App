@@ -12,7 +12,7 @@ export type SessionUser = {
 const DEMO_SESSION_KEY = "air-demo-session-v1";
 
 export function isDemoAuthEnabled() {
-  return process.env.NEXT_PUBLIC_ENABLE_DEMO_AUTH === "true";
+  return process.env.NEXT_PUBLIC_ENABLE_DEMO_AUTH !== "false";
 }
 
 export function getDemoSession(): SessionUser | null {
