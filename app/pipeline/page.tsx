@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { defaultPipeline, stages, type PipelineItem, type PipelineStage } from "@/data/pipeline";
+import { readDemoPipelineItems, writeDemoPipelineItems } from "@/lib/demo-store";
 import { hasSupabaseConfig } from "@/lib/env";
+import { getSessionUser, type SessionUser } from "@/lib/member-session";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { DbPipelineItem } from "@/lib/types";
 
@@ -30,7 +32,7 @@ export default function PipelinePage() {
   const [status, setStatus] = useState("Using seeded local data.");
   const [loading, setLoading] = useState(hasSupabaseConfig());
   const [error, setError] = useState("");
-  const [userId, setUserId] = useState<string | null>(null);
+  const [session, setSession] = useState<SessionUser | null>(null);
 
   const totalValue = useMemo(() => items.reduce((sum, item) => sum + item.value, 0), [items]);
   const bookedCount = useMemo(
@@ -40,51 +42,68 @@ export default function PipelinePage() {
   const paidCount = useMemo(() => items.filter((item) => item.stage === "Paid").length, [items]);
 
   useEffect(() => {
-    if (!hasSupabaseConfig()) {
-      setLoading(false);
-      return;
-    }
-
-    const supabase = getSupabaseBrowserClient();
-
-    void supabase.auth.getUser().then(({ data }) => {
-      const currentUser = data.user;
-      if (!currentUser) {
-        setStatus("Sign in on the Auth tab to load synced pipeline items.");
+    void getSessionUser().then((activeSession) => {
+      if (!activeSession) {
+        setStatus("Sign in on the Auth tab to load your work tracker.");
         setLoading(false);
         return;
       }
 
-      setUserId(currentUser.id);
-      setStatus("Loading synced pipeline from Supabase...");
+      setSession(activeSession);
+
+      if (activeSession.mode === "demo") {
+        const localItems = readDemoPipelineItems();
+        if (localItems.length > 0) {
+          setItems(localItems);
+        }
+        setStatus("Demo mode active. Changes save on this device.");
+        setLoading(false);
+        return;
+      }
+
+      if (!hasSupabaseConfig()) {
+        setStatus("Auth backend is not configured.");
+        setLoading(false);
+        return;
+      }
+
+      const supabase = getSupabaseBrowserClient();
+      setStatus("Loading your work tracker...");
 
       void (supabase.from("pipeline_items") as any)
         .select("*")
-        .eq("user_id", currentUser.id)
+        .eq("user_id", activeSession.id)
         .order("due_date", { ascending: true })
         .then((result: { data: DbPipelineItem[] | null; error: { message: string } | null }) => {
           const pipelineRows = result.data;
           const error = result.error;
           if (error) {
             setStatus("Supabase unavailable, showing seeded local data.");
-            setError("Could not load cloud pipeline data.");
+            setError("Could not load cloud work tracker data.");
             setLoading(false);
             return;
           }
 
           if (!pipelineRows || pipelineRows.length === 0) {
-            setStatus("No synced items yet. Add one to create your cloud pipeline.");
+            setStatus("No saved items yet. Add one to start tracking your work.");
             setItems([]);
             setLoading(false);
             return;
           }
 
           setItems((pipelineRows as DbPipelineItem[]).map(mapPipelineFromDb));
-          setStatus("Synced with Supabase.");
+          setStatus("Synced.");
           setLoading(false);
         });
     });
   }, []);
+
+  useEffect(() => {
+    if (session?.mode !== "demo") {
+      return;
+    }
+    writeDemoPipelineItems(items);
+  }, [items, session]);
 
   async function addItem() {
     if (!title || !client || !dueDate || !value) {
@@ -110,14 +129,24 @@ export default function PipelinePage() {
     setDueDate("");
     setValue("");
 
-    if (!hasSupabaseConfig() || !userId) {
+    if (!session) {
+      return;
+    }
+
+    if (session.mode === "demo") {
+      setStatus("Saved in demo mode.");
+      return;
+    }
+
+    if (!hasSupabaseConfig()) {
+      setStatus("Auth backend is not configured.");
       return;
     }
 
     const supabase = getSupabaseBrowserClient();
     const { error } = await (supabase.from("pipeline_items") as any).insert({
       id: newItem.id,
-      user_id: userId,
+      user_id: session.id,
       title: newItem.title,
       client: newItem.client,
       due_date: newItem.dueDate,
@@ -135,7 +164,16 @@ export default function PipelinePage() {
   async function moveStage(id: string, stage: PipelineStage) {
     setItems((prev) => prev.map((item) => (item.id === id ? { ...item, stage } : item)));
 
-    if (!hasSupabaseConfig() || !userId) {
+    if (!session) {
+      return;
+    }
+
+    if (session.mode === "demo") {
+      setStatus("Status updated in demo mode.");
+      return;
+    }
+
+    if (!hasSupabaseConfig()) {
       return;
     }
 
@@ -143,7 +181,7 @@ export default function PipelinePage() {
     const { error } = await (supabase.from("pipeline_items") as any)
       .update({ stage })
       .eq("id", id)
-      .eq("user_id", userId);
+      .eq("user_id", session.id);
 
     if (error) {
       setStatus("Stage update failed in Supabase. Refresh to verify.");
@@ -154,12 +192,12 @@ export default function PipelinePage() {
 
   return (
     <section className="screen pipeline-screen">
-      {loading ? <p className="status-banner info">Loading pipeline...</p> : null}
+      {loading ? <p className="status-banner info">Loading your work tracker...</p> : null}
       {!loading && error ? <p className="status-banner error">{error}</p> : null}
       <article className="pipeline-hero">
-        <p className="eyebrow">Pipeline</p>
-        <h2>Move deals to paid</h2>
-        <p className="screen-copy">Track each pitch from first contact to payment in one focused workflow.</p>
+        <p className="eyebrow">Work Tracker</p>
+        <h2>Move projects to paid</h2>
+        <p className="screen-copy">Track each project from first contact to payment in one clear list.</p>
         <div className="chip-row">
           <span className="chip">Booked {bookedCount}</span>
           <span className="chip">Paid {paidCount}</span>
@@ -167,9 +205,9 @@ export default function PipelinePage() {
       </article>
 
       <article className="card">
-        <p className="eyebrow">Pipeline Health</p>
+        <p className="eyebrow">Progress</p>
         <h3>{formatMoney(totalValue)} in potential value</h3>
-        <p className="muted">{items.length} active opportunities tracked.</p>
+        <p className="muted">{items.length} active items tracked.</p>
         <p className="muted">{status}</p>
       </article>
 
@@ -187,7 +225,7 @@ export default function PipelinePage() {
           />
         </div>
         <button className="button" onClick={addItem}>
-          Add to Pipeline
+          Add to Work Tracker
         </button>
       </article>
 
@@ -203,7 +241,7 @@ export default function PipelinePage() {
             </p>
             <p className={`stage-badge stage-${item.stage.toLowerCase().replace(" ", "-")}`}>{item.stage}</p>
             <label className="label">
-              Stage
+              Status
               <select value={item.stage} onChange={(e) => moveStage(item.id, e.target.value as PipelineStage)}>
                 {stages.map((stageName) => (
                   <option key={stageName} value={stageName}>

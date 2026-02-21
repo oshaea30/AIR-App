@@ -2,23 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { hasSupabaseConfig } from "@/lib/env";
-import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
+import { getSessionUser } from "@/lib/member-session";
 
 export function MemberContext() {
-  const [state, setState] = useState<"loading" | "signed_in" | "signed_out" | "local_mode">("loading");
+  const [state, setState] = useState<"loading" | "signed_in" | "signed_out">("loading");
   const [email, setEmail] = useState<string>("");
 
   useEffect(() => {
-    if (!hasSupabaseConfig()) {
-      setState("local_mode");
-      return;
-    }
-
-    const supabase = getSupabaseBrowserClient();
-    void supabase.auth.getUser().then(({ data }) => {
-      if (data.user?.email) {
-        setEmail(data.user.email);
+    void getSessionUser().then((user) => {
+      if (user?.email) {
+        setEmail(user.email);
         setState("signed_in");
         return;
       }
@@ -35,10 +28,6 @@ export function MemberContext() {
 
   if (state === "loading") {
     return <span className="member-pill ghost">Loading...</span>;
-  }
-
-  if (state === "local_mode") {
-    return <span className="member-pill ghost">Local Mode</span>;
   }
 
   if (state === "signed_out") {

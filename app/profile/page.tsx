@@ -1,12 +1,14 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { readDemoCheckins, readDemoProfile, writeDemoCheckins, writeDemoProfile } from "@/lib/demo-store";
 import { hasSupabaseConfig } from "@/lib/env";
+import { getSessionUser, type SessionUser } from "@/lib/member-session";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { DbMemberProfile, DbMentorCheckin } from "@/lib/types";
 
 export default function ProfilePage() {
-  const [userId, setUserId] = useState<string | null>(null);
+  const [session, setSession] = useState<SessionUser | null>(null);
   const [status, setStatus] = useState("Set profile preferences to improve opportunity ranking.");
   const [loading, setLoading] = useState(hasSupabaseConfig());
   const [error, setError] = useState("");
@@ -21,28 +23,44 @@ export default function ProfilePage() {
   const [checkins, setCheckins] = useState<DbMentorCheckin[]>([]);
 
   useEffect(() => {
-    if (!hasSupabaseConfig()) {
-      setStatus("Add Supabase env vars and sign in to persist profile data.");
-      setLoading(false);
-      return;
-    }
-
-    const supabase = getSupabaseBrowserClient();
-    void supabase.auth.getUser().then(({ data }) => {
-      const currentUser = data.user;
-      if (!currentUser) {
+    void getSessionUser().then((activeSession) => {
+      if (!activeSession) {
         setStatus("Sign in on Auth tab to save your profile.");
         setLoading(false);
         return;
       }
 
-      setUserId(currentUser.id);
+      setSession(activeSession);
+
+      if (activeSession.mode === "demo") {
+        const demoProfile = readDemoProfile();
+        const demoCheckins = readDemoCheckins();
+        if (demoProfile) {
+          setDisplayName(demoProfile.displayName);
+          setLocation(demoProfile.location);
+          setSkills(demoProfile.skills);
+          setBeats(demoProfile.beats);
+          setPayFloor(demoProfile.payFloor);
+        }
+        setCheckins(demoCheckins);
+        setStatus("Demo mode active. Profile changes save on this device.");
+        setLoading(false);
+        return;
+      }
+
+      if (!hasSupabaseConfig()) {
+        setStatus("Auth backend is not configured.");
+        setLoading(false);
+        return;
+      }
+
+      const supabase = getSupabaseBrowserClient();
 
       void Promise.all([
-        (supabase.from("member_profiles") as any).select("*").eq("user_id", currentUser.id).maybeSingle(),
+        (supabase.from("member_profiles") as any).select("*").eq("user_id", activeSession.id).maybeSingle(),
         (supabase.from("mentor_checkins") as any)
           .select("*")
-          .eq("user_id", currentUser.id)
+          .eq("user_id", activeSession.id)
           .order("next_check_in", { ascending: true })
       ]).then(([profileRes, checkinRes]) => {
         if (!profileRes.error && profileRes.data) {
@@ -66,13 +84,29 @@ export default function ProfilePage() {
   }, []);
 
   async function saveProfile() {
-    if (!hasSupabaseConfig() || !userId) {
+    if (!session) {
+      return;
+    }
+
+    if (session.mode === "demo") {
+      writeDemoProfile({
+        displayName,
+        location,
+        skills,
+        beats,
+        payFloor
+      });
+      setStatus("Profile saved in demo mode.");
+      return;
+    }
+
+    if (!hasSupabaseConfig()) {
       return;
     }
 
     const supabase = getSupabaseBrowserClient();
     const { error } = await (supabase.from("member_profiles") as any).upsert({
-      user_id: userId,
+      user_id: session.id,
       display_name: displayName || null,
       location: location || null,
       skills: skills
@@ -90,23 +124,38 @@ export default function ProfilePage() {
   }
 
   async function addCheckin() {
-    if (!hasSupabaseConfig() || !userId || !mentorName || !mentorTopic || !mentorDate) {
+    if (!session || !mentorName || !mentorTopic || !mentorDate) {
       return;
     }
 
-    const supabase = getSupabaseBrowserClient();
     const next = {
       id: `mentor-${crypto.randomUUID()}`,
-      user_id: userId,
+      user_id: session.id,
       mentor_name: mentorName,
       topic: mentorTopic,
       next_check_in: mentorDate,
       status: "Scheduled" as const
     };
 
+    if (session.mode === "demo") {
+      const updated = [...checkins, { ...next, notes: null, created_at: new Date().toISOString() }];
+      setCheckins(updated);
+      writeDemoCheckins(updated);
+      setMentorName("");
+      setMentorTopic("");
+      setMentorDate("");
+      setStatus("Coaching check-in scheduled in demo mode.");
+      return;
+    }
+
+    if (!hasSupabaseConfig()) {
+      return;
+    }
+
+    const supabase = getSupabaseBrowserClient();
     const { error } = await (supabase.from("mentor_checkins") as any).insert(next);
     if (error) {
-      setStatus("Could not add mentor check-in.");
+      setStatus("Could not add coaching check-in.");
       return;
     }
 
@@ -114,7 +163,7 @@ export default function ProfilePage() {
     setMentorName("");
     setMentorTopic("");
     setMentorDate("");
-    setStatus("Mentor check-in scheduled.");
+    setStatus("Coaching check-in scheduled.");
   }
 
   return (
@@ -125,7 +174,7 @@ export default function ProfilePage() {
       <article className="profile-hero">
         <p className="eyebrow">Profile</p>
         <h2>Your member settings</h2>
-        <p className="screen-copy">Tune matching quality and keep mentorship follow-ups on track.</p>
+        <p className="screen-copy">Tune matching quality and keep coaching follow-ups on track.</p>
         <p className="muted">{status}</p>
       </article>
 
@@ -144,10 +193,10 @@ export default function ProfilePage() {
       </article>
 
       <article className="card">
-        <p className="eyebrow">Mentor Workflow</p>
+        <p className="eyebrow">Coaching Plan</p>
         <h3>Schedule Check-In</h3>
         <div className="form-grid">
-          <input placeholder="Mentor name" value={mentorName} onChange={(e) => setMentorName(e.target.value)} />
+          <input placeholder="Coach name" value={mentorName} onChange={(e) => setMentorName(e.target.value)} />
           <input placeholder="Topic focus" value={mentorTopic} onChange={(e) => setMentorTopic(e.target.value)} />
           <input type="date" value={mentorDate} onChange={(e) => setMentorDate(e.target.value)} />
         </div>
@@ -157,7 +206,7 @@ export default function ProfilePage() {
       </article>
 
       <article className="card">
-        <p className="eyebrow">Upcoming Mentorship</p>
+        <p className="eyebrow">Upcoming Coaching</p>
         <ul className="simple-list">
           {checkins.length === 0 ? <li>No check-ins yet.</li> : null}
           {checkins.map((checkin) => (

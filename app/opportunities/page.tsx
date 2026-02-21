@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { OpportunityCard } from "@/components/opportunity-card";
 import { opportunities as seededOpportunities, type Opportunity } from "@/data/opportunities";
+import { readDemoPipelineItems, readDemoSavedIds, writeDemoPipelineItems, writeDemoSavedIds } from "@/lib/demo-store";
 import { hasSupabaseConfig } from "@/lib/env";
+import { getSessionUser, type SessionUser } from "@/lib/member-session";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { DbMemberProfile, DbOpportunity, DbSavedOpportunity } from "@/lib/types";
 
@@ -24,29 +26,33 @@ export default function OpportunitiesPage() {
   const [query, setQuery] = useState("");
   const [savedOnly, setSavedOnly] = useState(false);
   const [savedIds, setSavedIds] = useState<string[]>([]);
-  const [userId, setUserId] = useState<string | null>(null);
+  const [session, setSession] = useState<SessionUser | null>(null);
   const [profileSkills, setProfileSkills] = useState<string[]>([]);
 
   useEffect(() => {
-    if (!hasSupabaseConfig()) {
-      setLoading(false);
-      return;
-    }
-
-    const supabase = getSupabaseBrowserClient();
-    void supabase.auth.getUser().then(({ data }) => {
-      const currentUser = data.user;
-      if (!currentUser) {
-        setStatus("Sign in to save opportunities and personalize ranking.");
+    void getSessionUser().then((activeSession) => {
+      if (!activeSession) {
+        if (!hasSupabaseConfig()) {
+          setStatus("No sign-in found. Showing demo opportunities.");
+        }
         setLoading(false);
         return;
       }
-      setUserId(currentUser.id);
 
+      setSession(activeSession);
+
+      if (activeSession.mode === "demo") {
+        setSavedIds(readDemoSavedIds());
+        setStatus("Demo mode active. Changes save on this device.");
+        setLoading(false);
+        return;
+      }
+
+      const supabase = getSupabaseBrowserClient();
       void Promise.all([
         supabase.from("opportunities").select("*").order("deadline", { ascending: true }),
-        (supabase.from("saved_opportunities") as any).select("*").eq("user_id", currentUser.id),
-        (supabase.from("member_profiles") as any).select("*").eq("user_id", currentUser.id).limit(1).maybeSingle()
+        (supabase.from("saved_opportunities") as any).select("*").eq("user_id", activeSession.id),
+        (supabase.from("member_profiles") as any).select("*").eq("user_id", activeSession.id).limit(1).maybeSingle()
       ]).then(([oppRes, savedRes, profileRes]) => {
         if (!oppRes.error && oppRes.data && oppRes.data.length > 0) {
           const rows = oppRes.data as unknown as DbOpportunity[];
@@ -84,6 +90,13 @@ export default function OpportunitiesPage() {
   }, []);
 
   useEffect(() => {
+    if (session?.mode !== "demo") {
+      return;
+    }
+    writeDemoSavedIds(savedIds);
+  }, [savedIds, session]);
+
+  useEffect(() => {
     if (!actionMessage) {
       return;
     }
@@ -103,9 +116,26 @@ export default function OpportunitiesPage() {
   }, [activeType, opportunities, profileSkills, query, savedOnly, savedIds]);
 
   async function toggleSave(opportunityId: string) {
-    if (!hasSupabaseConfig() || !userId) {
+    if (!session) {
       setStatus("Sign in to save opportunities.");
       setActionMessage("Sign in required.");
+      return;
+    }
+
+    if (session.mode === "demo") {
+      const isSaved = savedIds.includes(opportunityId);
+      if (isSaved) {
+        setSavedIds((prev) => prev.filter((id) => id !== opportunityId));
+        setActionMessage("Removed from saved.");
+      } else {
+        setSavedIds((prev) => [...prev, opportunityId]);
+        setActionMessage("Saved opportunity.");
+      }
+      return;
+    }
+
+    if (!hasSupabaseConfig()) {
+      setStatus("Auth backend is not configured.");
       return;
     }
 
@@ -115,7 +145,7 @@ export default function OpportunitiesPage() {
     if (isSaved) {
       const { error } = await (supabase.from("saved_opportunities") as any)
         .delete()
-        .eq("user_id", userId)
+        .eq("user_id", session.id)
         .eq("opportunity_id", opportunityId);
       if (!error) {
         setSavedIds((prev) => prev.filter((id) => id !== opportunityId));
@@ -123,7 +153,7 @@ export default function OpportunitiesPage() {
       }
     } else {
       const { error } = await (supabase.from("saved_opportunities") as any).insert({
-        user_id: userId,
+        user_id: session.id,
         opportunity_id: opportunityId
       });
       if (!error) {
@@ -134,18 +164,39 @@ export default function OpportunitiesPage() {
   }
 
   async function trackOpportunity(opportunity: Opportunity) {
-    if (!hasSupabaseConfig() || !userId) {
-      setStatus("Sign in to add opportunities directly to pipeline.");
+    if (!session) {
+      setStatus("Sign in to add this to your work tracker.");
       setActionMessage("Sign in required.");
       return;
     }
 
-    const supabase = getSupabaseBrowserClient();
     const estimatedValue = Number((opportunity.compensation.match(/\d[\d,]*/) ?? ["1500"])[0].replace(",", ""));
 
+    if (session.mode === "demo") {
+      const pipelineItems = readDemoPipelineItems();
+      pipelineItems.unshift({
+        id: `pipe-${crypto.randomUUID()}`,
+        title: opportunity.title,
+        client: opportunity.org,
+        dueDate: opportunity.deadline,
+        value: estimatedValue,
+        stage: "To Pitch"
+      });
+      writeDemoPipelineItems(pipelineItems);
+      setStatus(`Added "${opportunity.title}" to your work tracker.`);
+      setActionMessage("Added to work tracker.");
+      return;
+    }
+
+    if (!hasSupabaseConfig()) {
+      setStatus("Auth backend is not configured.");
+      return;
+    }
+
+    const supabase = getSupabaseBrowserClient();
     const { error } = await (supabase.from("pipeline_items") as any).insert({
       id: `pipe-${crypto.randomUUID()}`,
-      user_id: userId,
+      user_id: session.id,
       title: opportunity.title,
       client: opportunity.org,
       due_date: opportunity.deadline,
@@ -154,13 +205,13 @@ export default function OpportunitiesPage() {
     });
 
     if (error) {
-      setStatus("Could not add to pipeline. Try again.");
+      setStatus("Could not add to work tracker. Try again.");
       setActionMessage("Add failed.");
       return;
     }
 
-    setStatus(`Added "${opportunity.title}" to pipeline.`);
-    setActionMessage("Added to pipeline.");
+    setStatus(`Added "${opportunity.title}" to your work tracker.`);
+    setActionMessage("Added to work tracker.");
   }
 
   return (
@@ -170,7 +221,7 @@ export default function OpportunitiesPage() {
       <article className="opps-hero">
         <p className="eyebrow">Today</p>
         <h2>Find your next assignment</h2>
-        <p className="screen-copy">Ranked opportunities tuned to your profile and workflow.</p>
+        <p className="screen-copy">Ranked opportunities tuned to your profile and goals.</p>
         <div className="opps-pills">
           <span className="opps-pill active">Matches</span>
           <span className="opps-pill muted">Calendar soon</span>

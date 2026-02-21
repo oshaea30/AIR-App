@@ -40,7 +40,7 @@ export function OpportunityCard({ opportunity, saved = false, fitScore, onToggle
           {saved ? "Saved" : "Bookmark"}
         </button>
         <button className="button" onClick={() => onTrack?.(opportunity)}>
-          Track in Pipeline
+          Add to Work Tracker
         </button>
       </div>
     </article>

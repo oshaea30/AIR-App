@@ -2,16 +2,18 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { StatCard } from "@/components/stat-card";
+import { readDemoCheckins, readDemoPipelineItems, readDemoSavedIds } from "@/lib/demo-store";
 import { opportunities as seededOpportunities } from "@/data/opportunities";
 import { defaultPipeline } from "@/data/pipeline";
 import { hasSupabaseConfig } from "@/lib/env";
+import { getSessionUser, type SessionUser } from "@/lib/member-session";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 import type { DbMentorCheckin, DbOpportunity, DbPipelineItem, DbSavedOpportunity } from "@/lib/types";
 
 const defaultTasks = [
   "Send 2 pitch follow-ups",
   "Review one contract with rate floor",
-  "Schedule or confirm mentor check-in"
+  "Schedule or confirm coaching check-in"
 ];
 
 function formatMoney(value: number) {
@@ -35,8 +37,9 @@ export default function HomePage() {
   const [mentorCheckins, setMentorCheckins] = useState<DbMentorCheckin[]>([]);
   const [notifyStatus, setNotifyStatus] = useState("Notifications off");
   const [actionStatus, setActionStatus] = useState("");
-  const [loading, setLoading] = useState(hasSupabaseConfig());
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [session, setSession] = useState<SessionUser | null>(null);
   const [taskDone, setTaskDone] = useState<Record<string, boolean>>(
     Object.fromEntries(defaultTasks.map((task) => [task, false]))
   );
@@ -76,7 +79,7 @@ export default function HomePage() {
     dueSoonPipeline.forEach((item) => {
       reminderList.push({
         id: `pipeline-${item.id}`,
-        text: `Pipeline follow-up: ${item.title} is due by ${item.dueDate}.`
+        text: `Work follow-up: ${item.title} is due by ${item.dueDate}.`
       });
     });
 
@@ -85,7 +88,7 @@ export default function HomePage() {
       if (days <= 7) {
         reminderList.push({
           id: `mentor-${checkin.id}`,
-          text: `Mentor check-in with ${checkin.mentor_name} in ${days} day(s).`
+          text: `Coaching check-in with ${checkin.mentor_name} in ${days} day(s).`
         });
       }
     });
@@ -110,27 +113,42 @@ export default function HomePage() {
       setNotifyStatus("Notifications unsupported in this browser.");
     }
 
-    if (!hasSupabaseConfig()) {
-      setLoading(false);
-      return;
-    }
+    void getSessionUser().then((activeSession) => {
+      setSession(activeSession);
+      if (!activeSession) {
+        setLoading(false);
+        return;
+      }
 
-    const supabase = getSupabaseBrowserClient();
-    void supabase.auth.getUser().then(({ data }) => {
-      const currentUser = data.user;
+      if (activeSession.mode === "demo") {
+        const demoPipeline = readDemoPipelineItems();
+        const demoSaved = readDemoSavedIds();
+        const demoCheckins = readDemoCheckins();
+        if (demoPipeline.length > 0) {
+          setPipelineItems(demoPipeline);
+        }
+        setSavedCount(demoSaved.length);
+        setMentorCheckins(demoCheckins);
+        setLoading(false);
+        return;
+      }
 
+      if (!hasSupabaseConfig()) {
+        setLoading(false);
+        return;
+      }
+
+      const supabase = getSupabaseBrowserClient();
       const sharedQueries = [supabase.from("opportunities").select("*").order("deadline", { ascending: true })];
-      const userQueries = currentUser
-        ? [
-            (supabase.from("pipeline_items") as any).select("*").eq("user_id", currentUser.id),
-            (supabase.from("saved_opportunities") as any).select("*").eq("user_id", currentUser.id),
-            (supabase.from("mentor_checkins") as any)
-              .select("*")
-              .eq("user_id", currentUser.id)
-              .eq("status", "Scheduled")
-              .order("next_check_in", { ascending: true })
-          ]
-        : [];
+      const userQueries = [
+        (supabase.from("pipeline_items") as any).select("*").eq("user_id", activeSession.id),
+        (supabase.from("saved_opportunities") as any).select("*").eq("user_id", activeSession.id),
+        (supabase.from("mentor_checkins") as any)
+          .select("*")
+          .eq("user_id", activeSession.id)
+          .eq("status", "Scheduled")
+          .order("next_check_in", { ascending: true })
+      ];
 
       void Promise.all([...sharedQueries, ...userQueries]).then((results) => {
         const [oppRes, pipelineRes, savedRes, mentorRes] = results as any[];
@@ -158,7 +176,7 @@ export default function HomePage() {
           );
         }
         if (pipelineRes?.error) {
-          setError("Could not load pipeline from cloud.");
+          setError("Could not load work tracker data from cloud.");
         }
 
         if (savedRes && !savedRes.error && savedRes.data) {
@@ -173,6 +191,18 @@ export default function HomePage() {
       });
     });
   }, []);
+
+  useEffect(() => {
+    if (session?.mode !== "demo") {
+      return;
+    }
+    setSavedCount(readDemoSavedIds().length);
+    const localPipeline = readDemoPipelineItems();
+    if (localPipeline.length > 0) {
+      setPipelineItems(localPipeline);
+    }
+    setMentorCheckins(readDemoCheckins());
+  }, [session]);
 
   useEffect(() => {
     const todayKey = new Date().toISOString().slice(0, 10);
@@ -248,7 +278,7 @@ export default function HomePage() {
       <article className="hero-card">
         <p className="eyebrow">Daily Briefing</p>
         <h2>Career Dashboard</h2>
-        <p className="screen-copy">One place to prioritize opportunities, deadlines, and mentorship follow-through.</p>
+        <p className="screen-copy">One place to prioritize opportunities, deadlines, and coaching follow-through.</p>
         <div className="meter-row">
           <p className="meter-label">Focus Score</p>
           <p className="meter-value">{focusScore}%</p>
@@ -260,7 +290,7 @@ export default function HomePage() {
 
       <div className="stats-grid">
         <StatCard label="Open Opportunities" value={`${opportunityCount}`} note="Current listings" tone="highlight" />
-        <StatCard label="Pipeline Value" value={formatMoney(pipelineValue)} note="Active deal value" />
+        <StatCard label="Expected Earnings" value={formatMoney(pipelineValue)} note="Active work value" />
         <StatCard label="Saved Opportunities" value={`${savedCount}`} note="Ready for follow-up" />
       </div>
 
@@ -299,7 +329,7 @@ export default function HomePage() {
       </article>
 
       <article className="card">
-        <p className="eyebrow">Pipeline Pulse</p>
+        <p className="eyebrow">Work Tracker</p>
         <h3>Stage Distribution</h3>
         <div className="distribution-list">
           {Object.entries(stageCounts).map(([stage, count]) => (
@@ -315,7 +345,7 @@ export default function HomePage() {
       </article>
 
       <article className="card">
-        <p className="eyebrow">Mentorship</p>
+        <p className="eyebrow">Coaching</p>
         <h3>Upcoming Check-Ins</h3>
         <ul className="simple-list">
           {mentorCheckins.length === 0 ? <li>No scheduled check-ins yet. Add one in Profile.</li> : null}
