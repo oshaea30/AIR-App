@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { clearDemoSession } from "@/lib/member-session";
+import { hasSupabaseConfig } from "@/lib/env";
 import { getSessionUser } from "@/lib/member-session";
+import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
 
 export function MemberContext() {
   const [state, setState] = useState<"loading" | "signed_in" | "signed_out">("loading");
   const [email, setEmail] = useState<string>("");
+  const [busy, setBusy] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
     void getSessionUser().then((user) => {
@@ -38,10 +44,27 @@ export function MemberContext() {
     );
   }
 
+  async function handleSignOut() {
+    if (busy) {
+      return;
+    }
+    setBusy(true);
+    if (hasSupabaseConfig()) {
+      const supabase = getSupabaseBrowserClient();
+      await supabase.auth.signOut();
+    }
+    clearDemoSession();
+    setState("signed_out");
+    setEmail("");
+    router.push("/auth");
+    router.refresh();
+    setBusy(false);
+  }
+
   return (
-    <Link href="/auth" className="member-pill signed">
+    <button className="member-pill signed" onClick={handleSignOut}>
       <span className="member-avatar">{initials}</span>
-      <span className="member-label">{email}</span>
-    </Link>
+      <span className="member-label">{busy ? "Signing out..." : "Sign out"}</span>
+    </button>
   );
 }

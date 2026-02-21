@@ -61,6 +61,10 @@ export function AppShell({ children }: Props) {
   }, [theme]);
 
   useEffect(() => {
+    if (authState === "authed" && pathname === "/auth") {
+      router.replace("/");
+      return;
+    }
     if (authState !== "guest") {
       return;
     }
@@ -111,6 +115,16 @@ export function AppShell({ children }: Props) {
           </div>
           <BrandRibbon />
           {children}
+        </div>
+      </main>
+    );
+  }
+
+  if (pathname === "/auth") {
+    return (
+      <main className="shell">
+        <div className="mobile-frame guest-frame">
+          <p className="status-banner info">Redirecting to dashboard...</p>
         </div>
       </main>
     );

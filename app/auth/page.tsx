@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { hasSupabaseConfig } from "@/lib/env";
 import { clearDemoSession, getSessionUser, isDemoAuthEnabled, setDemoSession, type SessionUser } from "@/lib/member-session";
 import { getSupabaseBrowserClient } from "@/lib/supabase-browser";
@@ -14,12 +14,14 @@ export default function AuthPage() {
   const [loading, setLoading] = useState(true);
   const demoEnabled = isDemoAuthEnabled();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const nextPath = searchParams.get("next") || "/";
 
   useEffect(() => {
     void getSessionUser().then((user) => {
       setSession(user);
+      if (user) {
+        router.replace("/");
+        return;
+      }
       if (!hasSupabaseConfig() && demoEnabled) {
         setStatus("Demo mode is ready. Tap Enter Demo to continue.");
       } else if (!hasSupabaseConfig() && !demoEnabled) {
@@ -27,7 +29,7 @@ export default function AuthPage() {
       }
       setLoading(false);
     });
-  }, [demoEnabled]);
+  }, [demoEnabled, router]);
 
   async function signIn() {
     if (!hasSupabaseConfig()) {
@@ -46,7 +48,7 @@ export default function AuthPage() {
       mode: "supabase"
     });
     setStatus("Signed in successfully.");
-    router.push(nextPath);
+    router.push("/");
   }
 
   async function signUp() {
@@ -88,13 +90,19 @@ export default function AuthPage() {
     }
     setSession(demoUser);
     setStatus("Demo session active. Data saves to this browser.");
-    router.push(nextPath);
+    router.push("/");
+  }
+
+  if (loading || session) {
+    return (
+      <section className="screen auth-screen">
+        <p className="status-banner info">{session ? "Redirecting to dashboard..." : "Loading auth status..."}</p>
+      </section>
+    );
   }
 
   return (
     <section className="screen auth-screen">
-      {loading ? <p className="status-banner info">Loading auth status...</p> : null}
-      {!loading && session ? <p className="status-banner success">Session active.</p> : null}
       <article className="auth-hero">
         <p className="eyebrow">Access</p>
         <h2>Sign in to AIR Career OS</h2>
@@ -105,9 +113,7 @@ export default function AuthPage() {
       <article className="card">
         <p className="eyebrow">Session</p>
         <h3>Account Session</h3>
-        <p className="muted">
-          {session ? `Signed in as ${session.email}${session.mode === "demo" ? " (Demo)" : ""}` : "No active session."}
-        </p>
+        <p className="muted">No active session.</p>
       </article>
 
       {hasSupabaseConfig() ? (

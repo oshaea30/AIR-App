@@ -22,8 +22,8 @@ export function AirLogo({ variant = "blue", className = "" }: Props) {
 
   return (
     <div className={`air-logo ${className}`.trim()} aria-label="AIR logo">
+      <span className="air-logo-fallback show">AIR</span>
       {!failed ? <img src={src} alt="AIR" className="air-logo-image" onError={() => setFailed(true)} /> : null}
-      <span className={failed ? "air-logo-fallback show" : "air-logo-fallback"}>AIR</span>
     </div>
   );
 }

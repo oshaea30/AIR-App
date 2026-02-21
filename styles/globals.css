@@ -86,13 +86,15 @@ body {
 }
 
 .air-logo-image {
+  position: absolute;
+  inset: 0;
+  margin: auto;
   width: 80px;
   height: 80px;
   object-fit: contain;
 }
 
 .air-logo-fallback {
-  display: none;
   color: var(--ink);
   font-size: 1.2rem;
   font-weight: 800;
