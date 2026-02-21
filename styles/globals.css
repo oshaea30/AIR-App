@@ -116,16 +116,17 @@ body {
   justify-content: flex-end;
   align-items: center;
   gap: 0.38rem;
+  flex-wrap: nowrap;
 }
 
 .menu-toggle {
   border: 1px solid var(--chip-border);
   background: var(--chip-bg);
   color: var(--ink);
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: 0.78rem;
+  font-weight: 650;
   border-radius: 999px;
-  padding: 0.42rem 0.62rem;
+  padding: 0.4rem 0.58rem;
   cursor: pointer;
 }
 
@@ -780,10 +781,10 @@ select {
   border: 1px solid var(--chip-border);
   background: var(--chip-bg);
   color: var(--ink);
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.76rem;
+  font-weight: 650;
   border-radius: 999px;
-  padding: 0.4rem 0.66rem;
+  padding: 0.38rem 0.58rem;
   text-decoration: none;
   display: inline-flex;
   align-items: center;
@@ -795,7 +796,7 @@ select {
 }
 
 .member-pill.signed {
-  max-width: 168px;
+  max-width: 132px;
 }
 
 .member-avatar {
@@ -921,9 +922,9 @@ select {
   background: var(--chip-bg);
   color: var(--ink);
   font-size: 0.76rem;
-  font-weight: 700;
+  font-weight: 650;
   border-radius: 999px;
-  padding: 0.42rem 0.62rem;
+  padding: 0.4rem 0.58rem;
   cursor: pointer;
   white-space: nowrap;
 }
@@ -962,6 +963,13 @@ select {
   padding: 0.62rem 0.7rem;
   font-weight: 650;
   font-size: 0.95rem;
+}
+
+@media (max-width: 819px) {
+  .topbar-row {
+    grid-template-columns: auto auto;
+    justify-content: space-between;
+  }
 }
 
 [data-theme="dark"] .task-item.done {

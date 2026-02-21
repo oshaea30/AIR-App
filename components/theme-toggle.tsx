@@ -8,7 +8,7 @@ type Props = {
 export function ThemeToggle({ theme, onToggle }: Props) {
   return (
     <button className="theme-toggle" onClick={onToggle} aria-label="Toggle theme">
-      {theme === "light" ? "Dark mode" : "Light mode"}
+      {theme === "light" ? "Dark" : "Light"}
     </button>
   );
 }
