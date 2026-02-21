@@ -4,11 +4,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const tabs = [
-  { href: "/", label: "Dashboard" },
+  { href: "/", label: "Home" },
   { href: "/opportunities", label: "Opportunities" },
   { href: "/toolkit", label: "Toolkit" },
-  { href: "/advocacy", label: "Advocacy" },
-  { href: "/profile", label: "Profile" },
+  { href: "/pipeline", label: "Tracker" }
 ];
 
 export function NavTabs() {

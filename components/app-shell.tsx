@@ -31,7 +31,19 @@ export function AppShell({ children }: Props) {
   const router = useRouter();
   const [authState, setAuthState] = useState<"loading" | "authed" | "guest">("loading");
   const [theme, setTheme] = useState<"light" | "dark">("light");
+  const [menuOpen, setMenuOpen] = useState(false);
   const publicRoutes = new Set(["/", "/auth"]);
+  const mainLinks = [
+    { href: "/", label: "Dashboard" },
+    { href: "/opportunities", label: "Opportunities" },
+    { href: "/toolkit", label: "Toolkit" },
+    { href: "/pipeline", label: "Work Tracker" }
+  ];
+  const moreLinks = [
+    { href: "/advocacy", label: "Advocacy" },
+    { href: "/profile", label: "Profile" },
+    { href: "/rates", label: "Rates" }
+  ];
 
   useEffect(() => {
     void getSessionUser().then((session) => {
@@ -73,6 +85,10 @@ export function AppShell({ children }: Props) {
     }
     router.replace(`/auth?next=${encodeURIComponent(pathname)}`);
   }, [authState, pathname, router]);
+
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [pathname]);
 
   function toggleTheme() {
     setTheme((prev) => (prev === "light" ? "dark" : "light"));
@@ -136,19 +152,44 @@ export function AppShell({ children }: Props) {
         <div className="topbar-row">
           <AirLogo variant={theme === "dark" ? "white" : "coral"} />
           <nav className="primary-nav">
-            <Link href="/">Dashboard</Link>
-            <Link href="/opportunities">Opportunities</Link>
-            <Link href="/toolkit">Toolkit</Link>
-            <Link href="/advocacy">Advocacy</Link>
-            <Link href="/pipeline">Work Tracker</Link>
-            <Link href="/profile">Profile</Link>
+            {mainLinks.map((item) => (
+              <Link key={item.href} href={item.href}>
+                {item.label}
+              </Link>
+            ))}
           </nav>
           <div className="top-actions">
+            <button className="menu-toggle" onClick={() => setMenuOpen((open) => !open)} aria-label="Open menu">
+              Menu
+            </button>
             <ThemeToggle theme={theme} onToggle={toggleTheme} />
             <MemberContext />
           </div>
         </div>
       </header>
+      {menuOpen ? (
+        <div className="menu-overlay" onClick={() => setMenuOpen(false)}>
+          <aside className="menu-drawer" onClick={(event) => event.stopPropagation()}>
+            <p className="eyebrow">Navigation</p>
+            <div className="menu-group">
+              {mainLinks.map((item) => (
+                <Link key={item.href} href={item.href} className="menu-link">
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+            <p className="eyebrow">More</p>
+            <div className="menu-group">
+              {moreLinks.map((item) => (
+                <Link key={item.href} href={item.href} className="menu-link">
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+            <p className="muted">Sign out from the top-right button.</p>
+          </aside>
+        </div>
+      ) : null}
       <main className="shell">
         <div className="mobile-frame">
           <BrandRibbon />
