@@ -4,8 +4,10 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
+import { AirLogo } from "@/components/air-logo";
 import { MemberContext } from "@/components/member-context";
 import { NavTabs } from "@/components/nav-tabs";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { getSessionUser } from "@/lib/member-session";
 
 type Props = {
@@ -28,6 +30,7 @@ export function AppShell({ children }: Props) {
   const pathname = usePathname();
   const router = useRouter();
   const [authState, setAuthState] = useState<"loading" | "authed" | "guest">("loading");
+  const [theme, setTheme] = useState<"light" | "dark">("light");
   const publicRoutes = new Set(["/", "/auth"]);
 
   useEffect(() => {
@@ -35,6 +38,27 @@ export function AppShell({ children }: Props) {
       setAuthState(session ? "authed" : "guest");
     });
   }, [pathname]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+    const saved = localStorage.getItem("air-theme");
+    if (saved === "light" || saved === "dark") {
+      setTheme(saved);
+      return;
+    }
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    setTheme(prefersDark ? "dark" : "light");
+  }, []);
+
+  useEffect(() => {
+    if (typeof document === "undefined") {
+      return;
+    }
+    document.documentElement.setAttribute("data-theme", theme);
+    localStorage.setItem("air-theme", theme);
+  }, [theme]);
 
   useEffect(() => {
     if (authState !== "guest") {
@@ -45,6 +69,10 @@ export function AppShell({ children }: Props) {
     }
     router.replace(`/auth?next=${encodeURIComponent(pathname)}`);
   }, [authState, pathname, router]);
+
+  function toggleTheme() {
+    setTheme((prev) => (prev === "light" ? "dark" : "light"));
+  }
 
   if (authState === "loading") {
     return (
@@ -73,12 +101,13 @@ export function AppShell({ children }: Props) {
       <main className="shell">
         <div className="mobile-frame guest-frame">
           <div className="guest-topbar">
-            <div className="air-logo" aria-hidden>
-              AIR
+            <AirLogo variant={theme === "dark" ? "white" : "coral"} />
+            <div className="top-actions">
+              <ThemeToggle theme={theme} onToggle={toggleTheme} />
+              <Link href="/auth" className="member-pill">
+                Sign in
+              </Link>
             </div>
-            <Link href="/auth" className="member-pill">
-              Sign in
-            </Link>
           </div>
           <BrandRibbon />
           {children}
@@ -91,9 +120,7 @@ export function AppShell({ children }: Props) {
     <>
       <header className="topbar">
         <div className="topbar-row">
-          <div className="air-logo" aria-hidden>
-            AIR
-          </div>
+          <AirLogo variant={theme === "dark" ? "white" : "coral"} />
           <nav className="primary-nav">
             <Link href="/">Dashboard</Link>
             <Link href="/opportunities">Opportunities</Link>
@@ -103,6 +130,7 @@ export function AppShell({ children }: Props) {
             <Link href="/profile">Profile</Link>
           </nav>
           <div className="top-actions">
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
             <MemberContext />
           </div>
         </div>
